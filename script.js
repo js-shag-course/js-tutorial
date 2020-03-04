@@ -1,21 +1,16 @@
 'use strict'
 
 window.addEventListener('DOMContentLoaded', () => {
-  fetch('https://rickandmortyapi.com/api/character/')
-  .then(response => {
-    if (response.status !== 200) {
-      console.log('sorry, error...')
-    } else {
-      return response.json()
-    }
-  })
-  .then(json => renderList(json))
-  .catch(err => console.log(err))
+  let rawData = {}
+  let info = {}
+  let list = []
+
+  fetchData ('https://rickandmortyapi.com/api/character/')
 
   function renderList(data) {
-    const rawData = data
-    const list = [...rawData.results]
-    const info = rawData.info
+    rawData = data
+    list = [ ...list, ...rawData.results ]
+    info = rawData.info
     const listContainer = document.querySelector('#list')
     const hideModalButton = document.querySelector('#hide-modal')
 
@@ -24,7 +19,8 @@ window.addEventListener('DOMContentLoaded', () => {
     document.querySelector('.total').innerText = info.count
     document.querySelector('.current').innerText = list.length
     
-    listContainer.querySelector('.preloader').remove()
+    document.querySelector('.preloader').style.display = 'none'
+    listContainer.innerHTML = ''
 
     list.forEach((character, i) => {
       let listItem = document.createElement('div')
@@ -44,14 +40,37 @@ window.addEventListener('DOMContentLoaded', () => {
       listItem.addEventListener('click', e => showModal(i, e))
       listContainer.appendChild(listItem)
     })
+  }
 
-    function showModal (id, e) {
-      console.log(id)
-      document.querySelector('#modal').classList.remove('hide')
-    }
+  function fetchData (url) {
+    fetch(url)
+    .then(response => {
+      if (response.status !== 200) {
+        console.log('sorry, error...')
+      } else {
+        return response.json()
+      }
+    })
+    .then(json => {
+      renderList(json)
+      document.querySelector('.progress').style.transform = `translateX(${ list.length / (120 * 0.01) }%)`
+      if (list.length < 120){
+        fetchData (info.next)
+      } else {
+        setTimeout(() => {
+          document.querySelector('.progress-bar').style.display = 'none'
+        }, 300)
+      }
+    })
+    .catch(err => console.log(err))
+  }
 
-    function hideModal () {
-      document.querySelector('#modal').classList.add('hide')
-    }
+  function showModal (id, e) {
+    console.log(id)
+    document.querySelector('#modal').classList.remove('hide')
+  }
+
+  function hideModal () {
+    document.querySelector('#modal').classList.add('hide')
   }
 })
